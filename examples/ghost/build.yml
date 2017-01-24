@@ -1,0 +1,24 @@
+---
+
+- name: "Build docker image with ghost inside"
+  hosts: localhost  # required
+  tasks:
+  - name: Build image
+    docker_image:
+      path: .
+      name: ghost
+      tag: latest
+      push: no
+      pull: no
+      force: yes
+      state: present
+  - name: "Overlay custom configuration on top of nginx image"
+    docker_image:
+      path: .
+      dockerfile: Dockerfile.nginx
+      name: nginx-ghost
+      tag: latest
+      push: no
+      pull: no
+      force: yes
+      state: present
