@@ -198,12 +198,74 @@ Filters: [docs.ansible.com/ansible/playbooks_filters.html](https://docs.ansible.
 {% endfor %}
 ```
 
+---
+
+class: center, middle
+
+# Containers with Ansible
+
+---
+
+# Docker modules
+
+```yaml
+docker_container, docker_network, docker_image, docker_service
+```
+
+Documentation: [docs.ansible.com/ansible/list_of_cloud_modules.html#docker](https://docs.ansible.com/ansible/list_of_cloud_modules.html#docker)
+
+---
+
+# Simple container: gogs
+
+```yaml
+---
+- name: create gogs container
+  hosts: localhost
+  tasks:
+    - name: create gogs container
+      docker_container:
+        name: my-gogs
+        image: gogs/gogs:0.9.113
+        state: started    # absent, present, stopped
+        published_ports:
+          - '10022:22'
+          - '3000:3000'
+        volumes:
+          - my-gogs-data:/data:z
+```
+
+---
+
+# Simple container: gogs II
+
+```yaml
+- name: create gogs container
+  hosts: localhost
+* vars:
+*   c_state: started
+  tasks:
+    - name: create gogs container
+      docker_container:
+        name: my-gogs
+        image: gogs/gogs:0.9.113
+*       pull: true
+*       state: '{{ c_state }}'
+*       restart_policy: always
+        published_ports:
+          - '10022:22'
+          - '3000:3000'
+        volumes:
+*         - /etc/localtime:/etc/localtime:ro
+          - my-gogs-data:/data:z
+```
     </textarea>
     <script src="remark-latest.min.js">
     </script>
     <script>
       var slideshow = remark.create({
-        ratio: '16:9'
+        ratio: '16:9',
+        highlightLines: true
       });
     </script>
   </body>
