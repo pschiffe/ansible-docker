@@ -1,0 +1,83 @@
+---
+
+- name: "Run ghost blogging platform deployed as containers"
+  hosts: localhost  # required
+  vars:
+    db_container: mariadb-container
+    db_database_name: ghost-db
+    db_user: "ghost-user"
+    db_password: "casper"
+    ghost_container: "ghost-container"
+    ghost_port: 2368
+    nginx_container: "nginx-container"
+  tasks:
+  - name: create ghost docker network
+    docker_network:
+      name: ghost-network
+  - name: run mariadb
+    docker_container:
+      name: "{{ db_container }}"
+      image: mariadb
+      env:
+        MYSQL_ROOT_PASSWORD: "root-password"
+        MYSQL_DATABASE: "{{ db_database_name }}"
+        MYSQL_USER: "{{ db_user }}"
+        MYSQL_PASSWORD: "{{ db_password }}"
+      state: "started"
+      recreate: true
+      ports:
+        - "3306:3306"
+      networks:
+        - name: "ghost-network"
+      volumes:
+        - mariadb-data:/var/lib/mysql
+  - name: get mariadb IP address
+    command: "docker inspect --format {% raw %}'{{ .NetworkSettings.IPAddress }}'{% endraw %} {{ db_container }}"
+    register: mariadb_ip_address
+  - name: wait for mariadb to become ready
+    wait_for:
+      host: "{{ mariadb_ip_address.stdout }}"
+      port: 3306
+      state: started
+      delay: 5
+      connect_timeout: 15
+      timeout: 30
+  - name: Run ghost web service
+    docker_container:
+      name: "{{ ghost_container }}"
+      image: ghost
+      networks:
+        - name: "ghost-network"
+      state: "started"
+      recreate: true
+      env:
+        DB_CONTAINER: "{{ db_container }}"
+        DB_USER: "{{ db_user }}"
+        DB_PASSWORD: "{{ db_password }}"
+        DB_DATABASE: "{{ db_database_name }}"
+      # interactive: true
+      # tty: true
+      # command: bash
+  - name: Run nginx proxy
+    docker_container:
+      name: "{{ nginx_container }}"
+      image: nginx-ghost
+      ports:
+        - "80:80"
+      networks:
+        - name: "ghost-network"
+      state: "started"
+      recreate: true
+      env:
+        GHOST_PORT: "{{ ghost_port }}"
+        GHOST_CONTAINER: "{{ ghost_container }}"
+  - name: get nginx IP address
+    command: "docker inspect --format {% raw %}'{{ .NetworkSettings.IPAddress }}'{% endraw %} {{ nginx_container }}"
+    register: nginx_ip_address
+  - name: Test if ghost is running
+    uri:
+      url: "http://{{ nginx_ip_address.stdout }}/"
+      method: GET
+      status_code: 200
+      delay: 5
+      rettries: 3
