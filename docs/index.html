@@ -9,11 +9,19 @@
       @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
 
       body { font-family: 'Droid Serif'; }
-      h1, h2, h3 {
+      h1, h2, h3, h4 {
         font-family: 'Yanone Kaffeesatz';
         font-weight: normal;
       }
       .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+
+      .remark-slide-content { font-size: 1.6em; }
+      .remark-slide-content h1 { font-size: 2.4em; }
+      .remark-slide-content h2 { font-size: 2.0em; }
+      .remark-slide-content h3 { font-size: 1.6em; }
+      .remark-slide-content h4 { font-size: 1.2em; }
+      .remark-code { font-size: 1em; }
+      .remark-slide-number { font-size: 0.8em; }
     </style>
   </head>
   <body>
@@ -22,18 +30,173 @@
 class: center, middle
 
 # Managing containers with Ansible
+### Peter Schiffer, Tomáš Tomeček
+#### [github.com/pschiffe/ansible-docker](https://github.com/pschiffe/ansible-docker)
 
 ---
 
 # Agenda
 
-1. Introduction
-2. Deep-dive
-3. ...
+* Skills poll
+* Ansible crash course
+* Containers with Ansible
+* Building images
+* But I have Docker Compose already
 
 ---
 
-# Introduction
+# Skills poll
+
+* Who already created container with Docker?
+
+--
+
+* Who created custom image for Docker?
+
+--
+
+* Who used Docker on more than 10 servers (vps)?
+
+--
+
+* Who already used Ansible?
+
+--
+
+* Who used Ansible on more than 10 servers (vps)?
+
+--
+
+* Who used Kubernetes?
+
+---
+
+# Prerequisites
+
+```bash
+sudo dnf install ansible docker python-docker-py
+sudo systemctl start docker
+```
+
+---
+
+class: center, middle
+
+# Ansible
+
+---
+
+# Task
+
+```yaml
+- name: install apache package
+  yum: name=httpd state=present
+```
+
+--
+
+Available modules: [docs.ansible.com/ansible/modules_by_category.html](https://docs.ansible.com/ansible/modules_by_category.html)
+
+```yaml
+yum, apt, package, pip, template, file, service, command, shell, nmcli..
+```
+
+---
+
+# Playbook
+
+```yaml
+- name: install and configure web servers
+  hosts: webservers
+  vars:
+    http_port: 80
+    max_clients: 200
+  tasks:
+    - name: install apache package
+      yum: name=httpd state=present
+    - name: write the apache config file
+      template: src=templates/httpd.conf.j2 dest=/etc/httpd.conf
+      notify:
+        - restart apache
+    - name: ensure apache is running (and enable it at boot)
+      service: name=httpd state=started enabled=yes
+  handlers:
+    - name: restart apache
+      service: name=httpd state=restarted
+```
+
+---
+
+# Inventory
+
+```yaml
+foo   ansible_host=foo.example.com   ansible_port=5555   ansible_user=centos
+
+[webservers]
+foo
+www[01:50].example.com
+```
+
+---
+
+# Control structures
+
+```yaml
+- name: install apache package on Red Hat distro
+  yum: name={{ item }} state=present
+  when: ansible_os_family == 'RedHat'
+  with_items:
+    - httpd
+    - mod_ssl
+
+- name: install apache package on Debian distro
+  apt: name={{ item }} state=present
+  when: ansible_os_family == 'Debian'
+  with_items:
+    - apache2
+    - apache2-utils
+```
+
+---
+
+# Variables
+
+```yaml
+- name: configure web servers
+  hosts: webservers
+  vars:
+    apache_listen_port: 80
+    apache_vhosts:
+      - servername: go.example.com
+        documentroot: /var/www/html/go
+      - servername: rust.example.com
+        documentroot: /var/www/html/rust
+        serveralias: default.example.com
+  tasks:
+    - name: write the apache config file
+      template: src=t/httpd.j2 dest={{ apache_conf | default('/etc/httpd.conf') }}
+```
+
+Filters: [docs.ansible.com/ansible/playbooks_filters.html](https://docs.ansible.com/ansible/playbooks_filters.html)
+
+---
+
+# Templates
+
+```yaml
+{# Set up VirtualHosts #}
+{% for vhost in apache_vhosts %}
+<VirtualHost {{ apache_listen_ip | default('*') }}:{{ apache_listen_port }}>
+  ServerName {{ vhost.servername }}
+{% if vhost.serveralias is defined %}
+  ServerAlias {{ vhost.serveralias }}
+{% endif %}
+{% if vhost.documentroot is defined %}
+  DocumentRoot {{ vhost.documentroot }}
+{% endif %}
+</VirtualHost>
+{% endfor %}
+```
 
     </textarea>
     <script src="remark-latest.min.js">
