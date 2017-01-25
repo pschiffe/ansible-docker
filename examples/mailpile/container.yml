@@ -1,0 +1,18 @@
+---
+- name: create mailpile container
+  docker_container:
+    name: '{{ c_name }}'
+    image: rroemhild/mailpile
+    pull: true
+    state: '{{ c_state }}'
+    restart_policy: always
+    published_ports:
+      - '{{ c_port }}:33411'
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - '{{ c_name }}-data:/root/.local/share/Mailpile:z'
+
+- name: remove docker volume
+  command: docker volume rm {{ c_name }}-data
+  ignore_errors: true
+  when: wipe

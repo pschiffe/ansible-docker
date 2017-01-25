@@ -1,0 +1,26 @@
+---
+- name: create gogs container
+  hosts: localhost
+  vars:
+    wipe: false
+    c_state: '{{ "absent" if wipe == "true" else "started" }}'
+    c_name: my-gogs
+  tasks:
+    - name: create gogs container
+      docker_container:
+        name: '{{ c_name }}'
+        image: gogs/gogs:0.9.113
+        pull: true
+        state: '{{ c_state }}'
+        restart_policy: always
+        published_ports:
+          - '10022:22'
+          - '3000:3000'
+        volumes:
+          - /etc/localtime:/etc/localtime:ro
+          - '{{ c_name }}-data:/data:z'
+
+    - name: remove docker volume
+      command: docker volume rm {{ c_name }}-data
+      ignore_errors: true
+      when: wipe

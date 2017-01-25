@@ -1,0 +1,20 @@
+---
+- name: create mailpile containers
+  hosts: localhost
+  vars:
+    wipe: false
+    c_state: '{{ "absent" if wipe == "true" else "started" }}'
+    containers:
+      - name: john
+        port: '21111'
+      - name: pete
+        port: '21112'
+      - name: jake
+        port: '21113'
+  tasks:
+    - name: create mailpile containers
+      include: container.yml
+      vars:
+        c_name: 'mailpile-{{ item.name }}'
+        c_port: '{{ item.port }}'
+      with_items: '{{ containers }}'
