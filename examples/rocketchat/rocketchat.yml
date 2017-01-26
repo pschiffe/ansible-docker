@@ -1,0 +1,78 @@
+---
+- name: create rocketchat container
+  hosts: localhost
+  vars:
+    wipe: false
+    c_state: '{{ "absent" if wipe == "true" else "started" }}'
+    c_name: my-rocketchat
+    mongo_admin: admin
+    mongo_admin_pass: password
+    rocket_user: rocket
+    rocket_password: password
+  tasks:
+    - name: create network for rocketchat
+      docker_network:
+        name: '{{ c_name }}'
+        state: present
+
+    - name: create mongodb for rocketchat container
+      docker_container:
+        name: '{{ c_name }}-mongo'
+        image: mongo:3.4
+        pull: true
+        state: '{{ c_state }}'
+        restart_policy: always
+        purge_networks: true
+        networks:
+          - name: '{{ c_name }}'
+            aliases:
+              - db
+              - mongo
+        volumes:
+          - /etc/localtime:/etc/localtime:ro
+          - '{{ c_name }}-db-data:/data/db:z'
+        command: --auth --smallfiles
+      register: mongo_container
+
+    - block:
+      - name: wait for mongodb to come up
+        pause: seconds=5
+      - name: create admin and rocket users in mongodb
+        shell: '{{ item }}'
+        ignore_errors: true
+        with_items:
+          - "echo \"db.createUser({ user: '{{ mongo_admin }}', pwd: '{{ mongo_admin_pass }}', roles: [ { role: 'userAdminAnyDatabase', db: 'admin' } ] });\" | docker exec -i {{ c_name }}-mongo mongo admin"
+          - "echo \"use {{ rocket_user }}\n db.createUser({ user: '{{ rocket_user }}', pwd: '{{ rocket_password }}', roles: [ { role: 'readWrite', db: '{{ rocket_user }}' } ] });\" | docker exec -i {{ c_name }}-mongo mongo admin -u {{ mongo_admin }} -p {{ mongo_admin_pass }}"
+      when:
+        - mongo_container | changed
+        - c_state == 'started'
+
+    - name: create rocketchat container
+      docker_container:
+        name: '{{ c_name }}'
+        image: rocket.chat
+        pull: true
+        state: '{{ c_state }}'
+        restart_policy: always
+        purge_networks: true
+        networks:
+          - name: '{{ c_name }}'
+        published_ports:
+          - '3000:3000'
+        env:
+          MONGO_URL: 'mongodb://{{ rocket_user }}:{{ rocket_password }}@db:27017/{{ rocket_user }}'
+        volumes:
+          - /etc/localtime:/etc/localtime:ro
+          - '{{ c_name }}-data:/app/uploads:z'
+
+    - name: remove docker volumes
+      command: docker volume rm {{ c_name }}-data {{ c_name }}-db-data
+      ignore_errors: true
+      when: wipe
+
+    - name: remove network
+      docker_network:
+        name: '{{ c_name }}'
+        state: absent
+      ignore_errors: true
+      when: wipe
