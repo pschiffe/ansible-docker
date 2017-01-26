@@ -1,0 +1,20 @@
+haproxy:
+  image: eeacms/haproxy
+  links:
+    - first_webapp
+    - second_webapp
+    - third_app
+  ports:
+    - "5000:5000"
+    - "1936:1936"
+  environment:
+    - SERVICE_NAMES=webapp
+
+first_webapp:
+  image: eeacms/hello
+
+second_webapp:
+  image: eeacms/hello
+
+third_app:
+  image: eeacms/hello

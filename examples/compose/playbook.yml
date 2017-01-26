@@ -1,0 +1,11 @@
+---
+- name: example ansible docker service
+  hosts: localhost
+  vars:
+    wipe: false
+    c_state: '{{ "absent" if wipe == "true" else "present" }}'
+  tasks:
+    - name: create containers from docker compose
+      docker_service:
+        project_src: .
+        state: '{{ c_state }}'
