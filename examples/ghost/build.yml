@@ -1,24 +1,24 @@
 ---
-
-- name: "Build docker image with ghost inside"
-  hosts: localhost  # required
+- name: build docker image with ghost inside
+  hosts: localhost
+  vars:
+    wipe: false
+    i_state: '{{ "absent" if wipe == "true" else "present" }}'
   tasks:
-  - name: Build image
-    docker_image:
-      path: .
-      name: ghost
-      tag: latest
-      push: no
-      pull: no
-      force: yes
-      state: present
-  - name: "Overlay custom configuration on top of nginx image"
-    docker_image:
-      path: .
-      dockerfile: Dockerfile.nginx
-      name: nginx-ghost
-      tag: latest
-      push: no
-      pull: no
-      force: yes
-      state: present
+    - name: overlay custom configuration on top of nginx image
+      docker_image:
+        path: nginx
+        name: my-nginx-ghost
+        tag: latest
+        state: '{{ i_state }}'
+        pull: no
+        force: true
+
+    - name: build ghost image
+      docker_image:
+        path: ghost
+        name: my-ghost
+        tag: latest
+        state: '{{ i_state }}'
+        pull: no
+        force: true
