@@ -1,14 +1,10 @@
 ---
-- name: create rocketchat container
+- name: create mongodb container for rocketchat
   hosts: localhost
   vars:
     wipe: false
-    c_state: '{{ "absent" if wipe == "true" else "started" }}'
+    c_state: '{{ "absent" if wipe | bool else "started" }}'
     c_name: my-rocketchat
-    mongo_admin: admin
-    mongo_admin_pass: password
-    rocket_user: rocket
-    rocket_password: password
   tasks:
     - name: create network for rocketchat
       docker_network:
@@ -18,7 +14,7 @@
     - name: create mongodb for rocketchat container
       docker_container:
         name: '{{ c_name }}-mongo'
-        image: mongo:3.4
+        image: pschiffe/mongo-ansible
         pull: true
         state: '{{ c_state }}'
         restart_policy: always
@@ -31,22 +27,45 @@
         volumes:
           - /etc/localtime:/etc/localtime:ro
           - '{{ c_name }}-db-data:/data/db:z'
+          - '{{ c_name }}-db-config-data:/data/configdb:z'
         command: --auth --smallfiles
-      register: mongo_container
 
-    - block:
-      - name: wait for mongodb to come up
-        pause: seconds=5
-      - name: create admin and rocket users in mongodb
-        shell: '{{ item }}'
-        ignore_errors: true
-        with_items:
-          - "echo \"db.createUser({ user: '{{ mongo_admin }}', pwd: '{{ mongo_admin_pass }}', roles: [ { role: 'userAdminAnyDatabase', db: 'admin' } ] });\" | docker exec -i {{ c_name }}-mongo mongo admin"
-          - "echo \"use {{ rocket_user }}\n db.createUser({ user: '{{ rocket_user }}', pwd: '{{ rocket_password }}', roles: [ { role: 'readWrite', db: '{{ rocket_user }}' } ] });\" | docker exec -i {{ c_name }}-mongo mongo admin -u {{ mongo_admin }} -p {{ mongo_admin_pass }}"
-      when:
-        - mongo_container | changed
-        - c_state == 'started'
+    - meta: refresh_inventory
 
+- name: create db users in mongodb container
+  hosts: '{{ c_name }}-mongo'
+  connection: docker
+  vars:
+    c_name: my-rocketchat
+    mongo_admin: admin
+    mongo_admin_pass: password1
+    rocket_user: rocket
+    rocket_password: password2
+  tasks:
+    - name: create admin user
+      shell: "echo \"db.createUser({ user: '{{ mongo_admin }}', pwd: '{{ mongo_admin_pass }}', roles: [ { role: 'userAdminAnyDatabase', db: 'admin' } ] });\" | mongo admin"
+
+    - name: create rocket user
+      mongodb_user:
+        login_user: '{{ mongo_admin }}'
+        login_password: '{{ mongo_admin_pass }}'
+        database: '{{ rocket_user }}'
+        name: '{{ rocket_user }}'
+        password: '{{ rocket_password }}'
+        roles:
+          - db: '{{ rocket_user }}'
+            role: readWrite
+        state: present
+
+- name: create rocketchat container
+  hosts: localhost
+  vars:
+    wipe: false
+    c_state: '{{ "absent" if wipe | bool else "started" }}'
+    c_name: my-rocketchat
+    rocket_user: rocket
+    rocket_password: password2
+  tasks:
     - name: create rocketchat container
       docker_container:
         name: '{{ c_name }}'
@@ -66,13 +85,13 @@
           - '{{ c_name }}-data:/app/uploads:z'
 
     - name: remove docker volumes
-      command: docker volume rm {{ c_name }}-data {{ c_name }}-db-data
+      command: docker volume rm {{ c_name }}-data {{ c_name }}-db-data {{ c_name }}-db-config-data
       ignore_errors: true
-      when: wipe
+      when: wipe | bool
 
     - name: remove network
       docker_network:
         name: '{{ c_name }}'
         state: absent
       ignore_errors: true
-      when: wipe
+      when: wipe | bool
