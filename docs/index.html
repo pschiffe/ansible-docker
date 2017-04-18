@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Managing containers with Ansible</title>
+    <title>Managing Containers with Ansible</title>
     <meta charset="utf-8">
     <style>
       @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
@@ -20,16 +20,27 @@
       .remark-slide-content h2 { font-size: 2.0em; }
       .remark-slide-content h3 { font-size: 1.6em; }
       .remark-slide-content h4 { font-size: 1.2em; }
-      .remark-code { font-size: 1em; }
+      .remark-code { font-size: 0.8em; }
       .remark-slide-number { font-size: 0.8em; }
+      .remark-slide-content ul { line-height: 1.4em; }
+
+      .small { font-size: 0.7em; }
+      .columns-3-ul ul { columns: 3; }
+
+      img { max-width: 100%; }
+      blockquote {
+        font-style: italic;
+        color: #777;
+      }
     </style>
+    <script src="https://use.fontawesome.com/1a2bc43b60.js"></script>
   </head>
   <body>
     <textarea id="source">
 
 class: center, middle
 
-# Managing containers with Ansible
+# Managing Containers with Ansible
 ### Peter Schiffer, Tomáš Tomeček
 #### [github.com/pschiffe/ansible-docker](https://github.com/pschiffe/ansible-docker)
 
@@ -37,7 +48,6 @@ class: center, middle
 
 # Agenda
 
-* Skills poll
 * Ansible crash course
 * Containers with Ansible
 * Building images
@@ -45,32 +55,34 @@ class: center, middle
 
 ---
 
+exclude: true
 # Skills poll
 
 * Who already created container with Docker?
 
 --
-
+exclude: true
 * Who created custom image for Docker?
 
 --
-
+exclude: true
 * Who used Docker on more than 10 servers (vps)?
 
 --
-
+exclude: true
 * Who already used Ansible?
 
 --
-
+exclude: true
 * Who used Ansible on more than 10 servers (vps)?
 
 --
-
+exclude: true
 * Who used Kubernetes?
 
 ---
 
+exclude: true
 # Prerequisites
 
 ```bash
@@ -98,6 +110,91 @@ class: center, middle
 
 ---
 
+# First steps
+
+## Installation on Fedora
+
+```bash
+$ sudo dnf install ansible python-docker-py
+```
+
+--
+
+## First command
+```bash
+$ ansible localhost -m ping
+ [WARNING]: provided hosts list is empty, only localhost is available
+
+localhost | SUCCESS => {
+    "changed": false,
+    "ping": "pong"
+}
+```
+
+---
+
+# Inventory
+
+```yaml
+[all]
+localhost   ansible_connection=local  ansible_become=true
+foo   ansible_host=foo.example.com   ansible_port=2222   ansible_user=centos
+
+[webservers]
+foo
+www[01:50].example.com
+```
+
+--
+
+## Dynamic Inventory
+
+```bash
+$ source openstack.rc
+$ ansible -i openstack.py all -m ping
+```
+
+???
+
+Inventory directory, output of dynamic inventory scripts
+
+---
+
+# Task
+
+<pre><code class="yaml hljs remark-code"><div class="remark-code-line">- name: install apache package
+
+</div></code></pre>
+
+---
+
+# Task
+
+```yaml
+- name: install apache package
+* yum:
+```
+
+---
+
+# Task
+
+```yaml
+- name: install apache package
+* yum: name=      state=
+```
+
+---
+
+# Task
+
+```yaml
+- name: install apache package
+* yum: name=httpd state=present
+```
+
+---
+
 # Task
 
 ```yaml
@@ -105,12 +202,115 @@ class: center, middle
   yum: name=httpd state=present
 ```
 
---
+```yaml
+- name: install apache package
+  yum:
+    name: httpd
+    state: present
+```
 
-Available modules: [docs.ansible.com/ansible/modules_by_category.html](https://docs.ansible.com/ansible/modules_by_category.html)
+---
+
+# Task
+
+```yaml
+- name: install apache package
+  yum: name=httpd state=present
+* tags:
+*   - installation
+*   - web-server
+```
+
+```yaml
+- name: install apache package
+  yum:
+    name: httpd
+    state: present
+* tags:
+*   - installation
+*   - web-server
+```
+
+---
+
+# Available modules
+
+1000+ modules: [docs.ansible.com/ansible/modules_by_category.html](https://docs.ansible.com/ansible/modules_by_category.html)
 
 ```yaml
 yum, apt, package, pip, template, file, service, command, shell, nmcli..
+```
+
+## Categories
+
+.columns-3-ul[
+* Cloud
+* Clustering
+* Commands
+* Crypto
+* Database
+* Files
+* Identity
+* Inventory
+* Messaging
+* Monitoring
+* Network
+* Notification
+* Packaging
+* Remote Management
+* Source Control
+* Storage
+* System
+* Utilities
+* Web Infrastructure
+* Windows
+]
+
+---
+
+# Playbook
+
+<pre><code class="yaml hljs remark-code"><div class="remark-code-line">- name: install and configure web servers
+  hosts: webservers
+
+
+
+  tasks:
+    - name: install apache package
+      yum: name=httpd state=present
+    - name: write the apache config file
+      template: src=t/httpd.j2 dest=/etc/httpd.conf
+
+
+    - name: ensure apache is running (and enable it at boot)
+      service: name=httpd state=started enabled=yes
+
+
+
+</div></code></pre>
+
+---
+
+# Playbook
+
+```yaml
+- name: install and configure web servers
+  hosts: webservers
+
+
+
+  tasks:
+    - name: install apache package
+      yum: name=httpd state=present
+    - name: write the apache config file
+      template: src=t/httpd.j2 dest=/etc/httpd.conf
+*     notify:
+*       - restart apache
+    - name: ensure apache is running (and enable it at boot)
+      service: name=httpd state=started enabled=yes
+* handlers:
+*   - name: restart apache
+*     service: name=httpd state=restarted
 ```
 
 ---
@@ -120,14 +320,14 @@ yum, apt, package, pip, template, file, service, command, shell, nmcli..
 ```yaml
 - name: install and configure web servers
   hosts: webservers
-  vars:
-    http_port: 80
-    max_clients: 200
+* vars:
+*   http_port: 80
+*   max_clients: 200
   tasks:
     - name: install apache package
       yum: name=httpd state=present
     - name: write the apache config file
-      template: src=templates/httpd.conf.j2 dest=/etc/httpd.conf
+      template: src=t/httpd.j2 dest=/etc/httpd.conf
       notify:
         - restart apache
     - name: ensure apache is running (and enable it at boot)
@@ -135,38 +335,6 @@ yum, apt, package, pip, template, file, service, command, shell, nmcli..
   handlers:
     - name: restart apache
       service: name=httpd state=restarted
-```
-
----
-
-# Inventory
-
-```yaml
-foo   ansible_host=foo.example.com   ansible_port=5555   ansible_user=centos
-
-[webservers]
-foo
-www[01:50].example.com
-```
-
----
-
-# Control structures
-
-```yaml
-- name: install apache package on Red Hat distro
-  yum: name={{ item }} state=present
-  when: ansible_os_family == 'RedHat'
-  with_items:
-    - httpd
-    - mod_ssl
-
-- name: install apache package on Debian distro
-  apt: name={{ item }} state=present
-  when: ansible_os_family == 'Debian'
-  with_items:
-    - apache2
-    - apache2-utils
 ```
 
 ---
@@ -189,13 +357,73 @@ www[01:50].example.com
       template: src=t/httpd.j2 dest={{ apache_conf | default('/etc/httpd.conf') }}
 ```
 
+---
+
+# Variables
+
+```yaml
+- name: configure web servers
+  hosts: webservers
+  vars:
+*   apache_listen_port: 80
+    apache_vhosts:
+      - servername: go.example.com
+        documentroot: /var/www/html/go
+      - servername: rust.example.com
+        documentroot: /var/www/html/rust
+        serveralias: default.example.com
+  tasks:
+    - name: write the apache config file
+      template: src=t/httpd.j2 dest={{ apache_conf | default('/etc/httpd.conf') }}
+```
+
+---
+
+# Variables
+
+```yaml
+- name: configure web servers
+  hosts: webservers
+  vars:
+    apache_listen_port: 80
+*   apache_vhosts:
+*     - servername: go.example.com
+*       documentroot: /var/www/html/go
+*     - servername: rust.example.com
+*       documentroot: /var/www/html/rust
+*       serveralias: default.example.com
+  tasks:
+    - name: write the apache config file
+      template: src=t/httpd.j2 dest={{ apache_conf | default('/etc/httpd.conf') }}
+```
+
+---
+
+# Variables
+
+```yaml
+- name: configure web servers
+  hosts: webservers
+  vars:
+    apache_listen_port: 80
+    apache_vhosts:
+      - servername: go.example.com
+        documentroot: /var/www/html/go
+      - servername: rust.example.com
+        documentroot: /var/www/html/rust
+        serveralias: default.example.com
+  tasks:
+    - name: write the apache config file
+*     template: src=t/httpd.j2 dest={{ apache_conf | default('/etc/httpd.conf') }}
+```
+
 Filters: [docs.ansible.com/ansible/playbooks_filters.html](https://docs.ansible.com/ansible/playbooks_filters.html)
 
 ---
 
-# Templates
+# Templates (httpd.j2)
 
-```yaml
+```django
 {# Set up VirtualHosts #}
 {% for vhost in apache_vhosts %}
 <VirtualHost {{ apache_listen_ip | default('*') }}:{{ apache_listen_port }}>
@@ -212,55 +440,269 @@ Filters: [docs.ansible.com/ansible/playbooks_filters.html](https://docs.ansible.
 
 ---
 
+# Templates (httpd.j2)
+
+```django
+*{# Set up VirtualHosts #}
+{% for vhost in apache_vhosts %}
+<VirtualHost {{ apache_listen_ip | default('*') }}:{{ apache_listen_port }}>
+  ServerName {{ vhost.servername }}
+{% if vhost.serveralias is defined %}
+  ServerAlias {{ vhost.serveralias }}
+{% endif %}
+{% if vhost.documentroot is defined %}
+  DocumentRoot {{ vhost.documentroot }}
+{% endif %}
+</VirtualHost>
+{% endfor %}
+```
+
+---
+
+# Templates (httpd.j2)
+
+```django
+{# Set up VirtualHosts #}
+*{% for vhost in apache_vhosts %}
+<VirtualHost {{ apache_listen_ip | default('*') }}:{{ apache_listen_port }}>
+  ServerName {{ vhost.servername }}
+{% if vhost.serveralias is defined %}
+  ServerAlias {{ vhost.serveralias }}
+{% endif %}
+{% if vhost.documentroot is defined %}
+  DocumentRoot {{ vhost.documentroot }}
+{% endif %}
+</VirtualHost>
+*{% endfor %}
+```
+
+---
+
+# Templates (httpd.j2)
+
+```django
+{# Set up VirtualHosts #}
+{% for vhost in apache_vhosts %}
+<VirtualHost {{ apache_listen_ip | default('*') }}:{{ apache_listen_port }}>
+  ServerName {{ vhost.servername }}
+*{% if vhost.serveralias is defined %}
+  ServerAlias {{ vhost.serveralias }}
+*{% endif %}
+*{% if vhost.documentroot is defined %}
+  DocumentRoot {{ vhost.documentroot }}
+*{% endif %}
+</VirtualHost>
+{% endfor %}
+```
+
+---
+
+# Templates (httpd.j2)
+
+```django
+{# Set up VirtualHosts #}
+{% for vhost in apache_vhosts %}
+*<VirtualHost {{ apache_listen_ip | default('*') }}:{{ apache_listen_port }}>
+* ServerName {{ vhost.servername }}
+{% if vhost.serveralias is defined %}
+* ServerAlias {{ vhost.serveralias }}
+{% endif %}
+{% if vhost.documentroot is defined %}
+* DocumentRoot {{ vhost.documentroot }}
+{% endif %}
+</VirtualHost>
+{% endfor %}
+```
+
+---
+
+# Control structures (when)
+
+```yaml
+- name: install apache package on Red Hat distro
+  yum: name=httpd state=present
+* when: ansible_os_family == 'RedHat'
+
+- name: install apache package on Debian distro
+  apt: name=apache2 state=present
+* when: ansible_os_family == 'Debian'
+```
+
+---
+
+# Control structures (with_items)
+
+```yaml
+- name: install apache package on Red Hat distro
+* yum: name={{ item }} state=present
+  when: ansible_os_family == 'RedHat'
+* with_items:
+*   - httpd
+*   - mod_ssl
+
+- name: install apache package on Debian distro
+* apt: name={{ item }} state=present
+  when: ansible_os_family == 'Debian'
+* with_items:
+*   - apache2
+*   - apache2-utils
+```
+
+---
+
+# Roles (directory structure)
+
+```bash
+site.yml
+webservers.yml
+fooservers.yml
+roles/
+  webservers/
+    files/
+    templates/
+    tasks/
+      main.yml
+    handlers/
+      main.yml
+    vars/
+    defaults/
+      main.yml
+    meta/
+```
+
+---
+
+# Roles (directory structure)
+
+```bash
+*site.yml
+*webservers.yml
+*fooservers.yml
+roles/
+  webservers/
+    files/
+    templates/
+    tasks/
+      main.yml
+    handlers/
+      main.yml
+    vars/
+    defaults/
+      main.yml
+    meta/
+```
+
+---
+
+# Roles (directory structure)
+
+```bash
+site.yml
+webservers.yml
+fooservers.yml
+roles/
+* webservers/
+    files/
+    templates/
+    tasks/
+      main.yml
+    handlers/
+      main.yml
+    vars/
+    defaults/
+      main.yml
+    meta/
+```
+
+---
+
+# Roles (directory structure)
+
+```bash
+site.yml
+webservers.yml
+fooservers.yml
+roles/
+  webservers/
+    files/
+    templates/
+    tasks/
+*     main.yml
+    handlers/
+*     main.yml
+    vars/
+    defaults/
+*     main.yml
+    meta/
+```
+
+---
+
+# Roles (in playbook)
+
+```yaml
+- name: deploy webservers
+  hosts: webservers
+  roles:
+    - common
+    - webservers
+```
+
+---
+
 class: center, middle
 
-# Containers with Ansible
+# Ansible <span class="fa fa-heart" aria-hidden="true"></span> Containers
 
 ---
 
 # Docker modules
 
-```yaml
-docker_container, docker_network, docker_image, docker_service
-```
+* [docker_container](http://docs.ansible.com/ansible/docker_container_module.html) - manage Docker containers
+* [docker_network](http://docs.ansible.com/ansible/docker_network_module.html) - manage Docker networks
+* [docker_image](http://docs.ansible.com/ansible/docker_image_module.html) - manage Docker images
+* [docker_service](http://docs.ansible.com/ansible/docker_service_module.html) - utilize Docker Compose
 
 Documentation: [docs.ansible.com/ansible/list_of_cloud_modules.html#docker](https://docs.ansible.com/ansible/list_of_cloud_modules.html#docker)
 
 ---
 
-# Simple container: gogs
+# Simple container: gitea (gogs fork)
 
 ```yaml
 ---
-- name: create gogs container
+- name: create gitea container
   hosts: localhost
   tasks:
-    - name: create gogs container
+    - name: create gitea container
       docker_container:
-        name: my-gogs
-        image: gogs/gogs:0.9.113
+        name: my-gitea
+        image: gitea/gitea:1.1
         state: started    # absent, present, stopped
         published_ports:
           - '10022:22'
           - '3000:3000'
         volumes:
-          - my-gogs-data:/data:z
+          - my-gitea-data:/data:z
+```
+```bash
+$ ansible-playbook gitea/gitea.yml
 ```
 
 ---
 
-# Simple container: gogs II
+# Simple container: gitea (gogs fork)
 
 ```yaml
-- name: create gogs container
+- name: create gitea container
   hosts: localhost
 * vars:
 *   c_state: started
   tasks:
-    - name: create gogs container
+    - name: create gitea container
       docker_container:
-        name: my-gogs
-        image: gogs/gogs:0.9.113
+        name: my-gitea
+        image: gitea/gitea:1.1
 *       pull: true
 *       state: '{{ c_state }}'
 *       restart_policy: always
@@ -269,8 +711,176 @@ Documentation: [docs.ansible.com/ansible/list_of_cloud_modules.html#docker](http
           - '3000:3000'
         volumes:
 *         - /etc/localtime:/etc/localtime:ro
-          - my-gogs-data:/data:z
+          - my-gitea-data:/data:z
 ```
+```bash
+$ ansible-playbook gitea/gitea.yml -e c_state=absent
+```
+
+---
+
+# Simple container: gitea (gogs fork)
+
+```yaml
+- name: create gitea container
+  hosts: localhost
+  vars:
+*   wipe: false
+*   c_state: '{{ "absent" if wipe | bool else "started" }}'
+*   c_name: my-gitea
+  tasks:
+    - name: create gitea container
+      docker_container:
+*       name: '{{ c_name }}'
+        image: gitea/gitea:1.1
+        state: '{{ c_state }}'
+        volumes:
+*         - '{{ c_name }}-data:/data:z'
+*   - name: remove docker volume
+*     command: docker volume rm {{ c_name }}-data
+*     ignore_errors: true
+*     when: wipe | bool
+```
+```bash
+$ ansible-playbook gitea/gitea.yml -e wipe=true
+```
+
+---
+
+# Multiple containers of one kind - mailpile
+
+```yaml
+$ cat container.yml
+- name: create mailpile container
+  docker_container:
+    name: '{{ c_name }}'
+    image: rroemhild/mailpile
+    pull: true
+    state: '{{ c_state }}'
+    restart_policy: always
+    published_ports:
+*     - '{{ c_port }}:33411'
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - '{{ c_name }}-data:/root/.local/share/Mailpile:z'
+
+- name: remove docker volume
+  command: docker volume rm {{ c_name }}-data
+  ignore_errors: true
+  when: wipe | bool
+```
+
+---
+
+# Multiple containers of one kind - mailpile
+
+```yaml
+- name: create mailpile containers
+  hosts: localhost
+  vars:
+    wipe: false
+    c_state: '{{ "absent" if wipe | bool else "started" }}'
+    containers:
+      - name: john
+        port: '21111'
+      - name: pete
+        port: '21112'
+      - name: jake
+        port: '21113'
+  tasks:
+    - name: create mailpile containers
+      include: container.yml
+      vars:
+        c_name: 'mailpile-{{ item.name }}'
+        c_port: '{{ item.port }}'
+      with_items: '{{ containers }}'
+```
+
+---
+
+# Networking and connection: docker - Rocket.Chat
+
+```yaml
+- name: create mongodb container for rocketchat
+  hosts: localhost
+  tasks:
+    - name: create network for rocketchat
+      docker_network:
+        name: '{{ c_name }}'
+        state: present
+
+    - name: create mongodb for rocketchat container
+      docker_container:
+        name: '{{ c_name }}-mongo'
+        image: pschiffe/mongo-ansible
+        state: '{{ c_state }}'
+        purge_networks: true
+        networks:
+          - name: '{{ c_name }}'
+            aliases:
+              - db
+              - mongo
+
+    - meta: refresh_inventory
+```
+
+---
+
+# Networking and connection: docker - Rocket.Chat
+
+```yaml
+- name: create db users in mongodb container
+  hosts: '{{ c_name }}-mongo'
+  connection: docker
+  vars:
+    mongo_admin: admin
+    mongo_admin_pass: password1
+    rocket_user: rocket
+    rocket_password: password2
+  tasks:
+    - name: create rocket user
+      mongodb_user:
+        login_user: '{{ mongo_admin }}'
+        login_password: '{{ mongo_admin_pass }}'
+        database: '{{ rocket_user }}'
+        name: '{{ rocket_user }}'
+        password: '{{ rocket_password }}'
+        roles:
+          - db: '{{ rocket_user }}'
+            role: readWrite
+        state: present
+```
+
+---
+
+# Networking and connection: docker - Rocket.Chat
+
+```yaml
+- name: create rocketchat container
+  hosts: localhost
+  tasks:
+    - name: create rocketchat container
+      docker_container:
+        name: '{{ c_name }}'
+        image: rocket.chat
+        state: '{{ c_state }}'
+        purge_networks: true
+        networks:
+          - name: '{{ c_name }}'
+        env:
+          MONGO_URL: 'mongodb://{{ rocket_user }}:{{ rocket_password }}@db:27017/{{ rocket_user }}'
+        volumes:
+          - /etc/localtime:/etc/localtime:ro
+          - '{{ c_name }}-data:/app/uploads:z'
+
+    - name: remove network
+      docker_network:
+        name: '{{ c_name }}'
+        state: absent
+      ignore_errors: true
+      when: wipe | bool
+```
+
     </textarea>
     <script src="remark-latest.min.js">
     </script>
@@ -282,4 +892,3 @@ Documentation: [docs.ansible.com/ansible/list_of_cloud_modules.html#docker](http
     </script>
   </body>
 </html>
-
