@@ -3,7 +3,7 @@
   hosts: localhost
   vars:
     wipe: false
-    c_state: '{{ "absent" if wipe == "true" else "started" }}'
+    c_state: '{{ "absent" if wipe | bool else "started" }}'
     containers:
       - name: john
         port: '21111'

@@ -15,4 +15,4 @@
 - name: remove docker volume
   command: docker volume rm {{ c_name }}-data
   ignore_errors: true
-  when: wipe
+  when: wipe | bool
