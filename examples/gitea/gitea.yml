@@ -1,15 +1,15 @@
 ---
-- name: create gogs container
+- name: create gitea container
   hosts: localhost
   vars:
     wipe: false
-    c_state: '{{ "absent" if wipe == "true" else "started" }}'
-    c_name: my-gogs
+    c_state: '{{ "absent" if wipe | bool else "started" }}'
+    c_name: my-gitea
   tasks:
-    - name: create gogs container
+    - name: create gitea container
       docker_container:
         name: '{{ c_name }}'
-        image: gogs/gogs:0.9.113
+        image: gitea/gitea:1.1
         pull: true
         state: '{{ c_state }}'
         restart_policy: always
@@ -23,4 +23,4 @@
     - name: remove docker volume
       command: docker volume rm {{ c_name }}-data
       ignore_errors: true
-      when: wipe
+      when: wipe | bool
