@@ -3,7 +3,7 @@
   hosts: localhost
   vars:
     wipe: false
-    c_state: '{{ "absent" if wipe == "true" else "present" }}'
+    c_state: '{{ "absent" if wipe | bool else "present" }}'
   tasks:
     - name: create containers from docker compose
       docker_service:
