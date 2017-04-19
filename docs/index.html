@@ -20,7 +20,7 @@
       .remark-slide-content h2 { font-size: 2.0em; }
       .remark-slide-content h3 { font-size: 1.6em; }
       .remark-slide-content h4 { font-size: 1.2em; }
-      .remark-code { font-size: 0.8em; }
+      .remark-code { font-size: 0.9em; }
       .remark-slide-number { font-size: 0.8em; }
       .remark-slide-content ul { line-height: 1.4em; }
 
@@ -50,8 +50,26 @@ class: center, middle
 
 * Ansible crash course
 * Containers with Ansible
-* Building images
+* ~~Building images~~
 * But I have Docker Compose already
+
+---
+
+# Why?
+
+* Ansible is very powerful
+
+--
+
+* Suitable for any scale
+
+--
+
+  * But for über-scale you should get Ansible Tower
+
+--
+
+  * Content of this talk is for small to mid-scale
 
 ---
 
@@ -115,7 +133,7 @@ class: center, middle
 ## Installation on Fedora
 
 ```bash
-$ sudo dnf install ansible python-docker-py
+$ sudo dnf install ansible python-docker-py docker docker-compose
 ```
 
 --
@@ -137,7 +155,7 @@ localhost | SUCCESS => {
 
 ```yaml
 [all]
-localhost   ansible_connection=local  ansible_become=true
+localhost   ansible_connection=local  ansible_become=false
 foo   ansible_host=foo.example.com   ansible_port=2222   ansible_user=centos
 
 [webservers]
@@ -880,6 +898,67 @@ $ cat container.yml
       ignore_errors: true
       when: wipe | bool
 ```
+
+---
+
+class: center, middle
+
+# So what about Docker Compose?
+
+---
+
+# Docker Compose
+
+```yaml
+haproxy:
+  image: eeacms/haproxy:1.7-3.0
+  links:
+    - first_webapp
+    - second_webapp
+    - third_app
+  ports:
+    - "5000:5000"
+    - "1936:1936"
+  environment:
+    - SERVICE_NAMES=webapp
+
+first_webapp:
+  image: eeacms/hello
+
+second_webapp:
+  image: eeacms/hello
+
+third_app:
+  image: eeacms/hello
+```
+
+---
+
+# Ansible Playbook
+
+```yaml
+---
+- name: example ansible docker service
+  hosts: localhost
+  vars:
+    wipe: false
+    c_state: '{{ "absent" if wipe | bool else "present" }}'
+  tasks:
+    - name: create containers from docker compose
+      docker_service:
+        project_src: .
+        state: '{{ c_state }}'
+```
+
+---
+
+class: center, middle
+
+# Q &amp; A?
+#### [github.com/pschiffe/ansible-docker](https://github.com/pschiffe/ansible-docker)
+#### <span class="fa fa-linkedin-square"></span> [Peter Schiffer](https://www.linkedin.com/in/peterschiffer/)
+#### <span class="fa fa-twitter-square"></span> [Tomáš Tomeček](https://twitter.com/TomasTomec)
+
 
     </textarea>
     <script src="remark-latest.min.js">
