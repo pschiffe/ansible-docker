@@ -1,4 +1,4 @@
-FROM nginx:1.10-alpine
+FROM nginx:1.12-alpine
 MAINTAINER "Tomas Tomecek" <ttomecek@redhat.com>
 
 COPY nginx-ghost.conf.tpl /etc/nginx/conf.d/default.conf.tpl

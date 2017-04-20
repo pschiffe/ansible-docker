@@ -11,9 +11,10 @@ RUN dnf -y --setopt=tsflags=nodocs install \
 
 WORKDIR /app
 
-RUN curl -sSL -O https://github.com/TryGhost/Ghost/releases/download/0.11.4/Ghost-0.11.4.zip \
-    && unzip Ghost-0.11.4.zip \
-    && rm -f Ghost-0.11.4.zip \
+RUN GHOST_VERSION=0.11.8 \
+    && curl -sSL -O https://github.com/TryGhost/Ghost/releases/download/${GHOST_VERSION}/Ghost-${GHOST_VERSION}.zip \
+    && unzip Ghost-${GHOST_VERSION}.zip \
+    && rm -f Ghost-${GHOST_VERSION}.zip \
     && npm install --production
 
 COPY config.js.tpl docker-cmd.sh /app/
