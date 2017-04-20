@@ -20,7 +20,7 @@
       .remark-slide-content h2 { font-size: 2.0em; }
       .remark-slide-content h3 { font-size: 1.6em; }
       .remark-slide-content h4 { font-size: 1.2em; }
-      .remark-code { font-size: 0.9em; }
+      .remark-code { font-size: 0.977em; }
       .remark-slide-number { font-size: 0.8em; }
       .remark-slide-content ul { line-height: 1.4em; }
 
@@ -42,7 +42,7 @@ class: center, middle
 
 # Managing Containers with Ansible
 ### Peter Schiffer, Tomáš Tomeček
-#### [github.com/pschiffe/ansible-docker](https://github.com/pschiffe/ansible-docker)
+#### <span class="fa fa-github-square"></span> [pschiffe/ansible-docker](https://github.com/pschiffe/ansible-docker)
 
 ???
 
@@ -54,7 +54,7 @@ whoami
 
 * Ansible crash course
 * Containers with Ansible
-* ~~Building images~~
+* Building images
 * But I have Docker Compose already
 
 ---
@@ -78,33 +78,6 @@ whoami
 --
 
   * Content of this talk is for small to mid-scale
-
----
-
-exclude: true
-# Skills poll
-
-* Who already created container with Docker?
-
---
-exclude: true
-* Who created custom image for Docker?
-
---
-exclude: true
-* Who used Docker on more than 10 servers (vps)?
-
---
-exclude: true
-* Who already used Ansible?
-
---
-exclude: true
-* Who used Ansible on more than 10 servers (vps)?
-
---
-exclude: true
-* Who used Kubernetes?
 
 ---
 
@@ -188,45 +161,12 @@ Inventory directory, output of dynamic inventory scripts
 
 # Task
 
-<pre><code class="yaml hljs remark-code"><div class="remark-code-line">- name: install apache package
-
-</div></code></pre>
-
----
-
-# Task
-
-```yaml
-- name: install apache package
-* yum:
-```
-
----
-
-# Task
-
-```yaml
-- name: install apache package
-* yum: name=      state=
-```
-
----
-
-# Task
-
-```yaml
-- name: install apache package
-* yum: name=httpd state=present
-```
-
----
-
-# Task
-
 ```yaml
 - name: install apache package
   yum: name=httpd state=present
 ```
+
+--
 
 ```yaml
 - name: install apache package
@@ -806,13 +746,13 @@ $ cat container.yml
   vars:
     wipe: false
     c_state: '{{ "absent" if wipe | bool else "started" }}'
-    containers:
-      - name: john
-        port: '21111'
-      - name: pete
-        port: '21112'
-      - name: jake
-        port: '21113'
+*   containers:
+*     - name: john
+*       port: '21111'
+*     - name: pete
+*       port: '21112'
+*     - name: jake
+*       port: '21113'
   tasks:
     - name: create mailpile containers
       include: container.yml
@@ -824,6 +764,32 @@ $ cat container.yml
 
 ---
 
+# Multiple containers of one kind - mailpile
+
+```yaml
+- name: create mailpile containers
+  hosts: localhost
+  vars:
+    wipe: false
+    c_state: '{{ "absent" if wipe | bool else "started" }}'
+    containers:
+      - name: john
+        port: '21111'
+      - name: pete
+        port: '21112'
+      - name: jake
+        port: '21113'
+  tasks:
+    - name: create mailpile containers
+*     include: container.yml
+*     vars:
+*       c_name: 'mailpile-{{ item.name }}'
+*       c_port: '{{ item.port }}'
+*     with_items: '{{ containers }}'
+```
+
+---
+
 # Networking and connection: docker - Rocket.Chat
 
 ```yaml
@@ -831,7 +797,7 @@ $ cat container.yml
   hosts: localhost
   tasks:
     - name: create network for rocketchat
-      docker_network:
+*     docker_network:
         name: '{{ c_name }}'
         state: present
 
@@ -840,14 +806,14 @@ $ cat container.yml
         name: '{{ c_name }}-mongo'
         image: pschiffe/mongo-ansible
         state: '{{ c_state }}'
-        purge_networks: true
-        networks:
-          - name: '{{ c_name }}'
-            aliases:
-              - db
-              - mongo
+*       purge_networks: true
+*       networks:
+*         - name: '{{ c_name }}'
+*           aliases:
+*             - db
+*             - mongo
 
-    - meta: refresh_inventory
+*   - meta: refresh_inventory
 ```
 
 ---
@@ -856,8 +822,8 @@ $ cat container.yml
 
 ```yaml
 - name: create db users in mongodb container
-  hosts: '{{ c_name }}-mongo'
-  connection: docker
+* hosts: '{{ c_name }}-mongo'
+* connection: docker
   vars:
     mongo_admin: admin
     mongo_admin_pass: password1
@@ -865,7 +831,7 @@ $ cat container.yml
     rocket_password: password2
   tasks:
     - name: create rocket user
-      mongodb_user:
+*     mongodb_user:
         login_user: '{{ mongo_admin }}'
         login_password: '{{ mongo_admin_pass }}'
         database: '{{ rocket_user }}'
@@ -893,18 +859,163 @@ $ cat container.yml
         purge_networks: true
         networks:
           - name: '{{ c_name }}'
-        env:
-          MONGO_URL: 'mongodb://{{ rocket_user }}:{{ rocket_password }}@db:27017/{{ rocket_user }}'
+*       env:
+*         MONGO_URL: 'mongodb://{{ rocket_user }}:{{ rocket_password }}@db:27017/{{ rocket_user }}'
         volumes:
-          - /etc/localtime:/etc/localtime:ro
           - '{{ c_name }}-data:/app/uploads:z'
 
-    - name: remove network
+*   - name: remove network
       docker_network:
         name: '{{ c_name }}'
         state: absent
       ignore_errors: true
       when: wipe | bool
+```
+
+---
+
+class: center, middle
+
+# Building Images
+
+---
+
+# Building Images - ghost
+
+```yaml
+- name: run ghost blogging platform deployed as containers
+  hosts: localhost
+  vars:
+    wipe: false
+    c_state: '{{ "absent" if wipe | bool else "started" }}'
+*   i_state: '{{ "absent" if wipe | bool else "present" }}'
+    c_name: my-ghost
+    nginx_container: '{{ c_name }}-nginx'
+    db_container: '{{ c_name }}-db'
+    db_database_name: ghost
+    db_user: ghost
+    db_password: casper
+```
+
+---
+
+# Building Images - ghost
+
+```yaml
+tasks:
+  - name: build ghost image
+*   docker_image:
+      path: ghost
+      name: '{{ c_name }}'
+      tag: latest
+      state: '{{ i_state }}'
+*     force: true
+
+  - name: overlay custom configuration on top of nginx image
+*   docker_image:
+      path: nginx
+      name: '{{ nginx_container }}'
+      tag: latest
+      state: '{{ i_state }}'
+*     force: true
+```
+
+---
+
+# Building Images - ghost
+
+```yaml
+- name: create ghost docker network
+  docker_network:
+    name: '{{ c_name }}'
+    state: present
+
+- name: run mariadb
+  docker_container:
+    name: '{{ db_container }}'
+    image: mariadb:10.1
+    state: '{{ c_state }}'
+    purge_networks: true
+    networks:
+      - name: '{{ c_name }}'
+    env:
+      MYSQL_ROOT_PASSWORD: root-password
+      MYSQL_DATABASE: '{{ db_database_name }}'
+      MYSQL_USER: '{{ db_user }}'
+      MYSQL_PASSWORD: '{{ db_password }}'
+    volumes:
+      - '{{ db_container }}-data:/var/lib/mysql:z'
+```
+
+---
+
+# Building Images - ghost
+
+```yaml
+- name: get mariadb IP address
+* command: "docker inspect --format {% raw %}'{{range \
+*   .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'{% endraw %} \
+*   {{ db_container }}"
+  register: mariadb_ip_address
+  when: not wipe | bool
+
+- name: wait for mariadb to become ready
+* wait_for:
+    host: '{{ mariadb_ip_address.stdout }}'
+    port: 3306
+    state: started
+    connect_timeout: 15
+    timeout: 30
+  register: mariadb_running
+  until: mariadb_running | success
+  retries: 10
+  delay: 5
+  when: not wipe | bool
+```
+
+---
+
+# Building Images - ghost
+
+```yaml
+- name: run ghost web service
+  docker_container:
+    name: '{{ c_name }}'
+    image: '{{ c_name }}'
+    state: '{{ c_state }}'
+*   env:
+      DB_CONTAINER: '{{ db_container }}'
+      DB_USER: '{{ db_user }}'
+      DB_PASSWORD: '{{ db_password }}'
+      DB_DATABASE: '{{ db_database_name }}'
+
+- name: run nginx proxy
+  docker_container:
+    name: '{{ nginx_container }}'
+    image: '{{ nginx_container }}'
+    state: '{{ c_state }}'
+    published_ports:
+      - '8080:80'
+*   env:
+      GHOST_CONTAINER: '{{ c_name }}'
+      GHOST_PORT: 2368
+```
+
+---
+
+# Building Images - ghost
+
+```yaml
+- name: test if ghost is running
+* uri:
+    url: "http://localhost:8080/"
+    method: GET
+    status_code: 200
+  register: ghost_running
+  until: ghost_running | success
+  retries: 10
+  delay: 10
+  when: not wipe | bool
 ```
 
 ---
@@ -953,8 +1064,8 @@ third_app:
     c_state: '{{ "absent" if wipe | bool else "present" }}'
   tasks:
     - name: create containers from docker compose
-      docker_service:
-        project_src: .
+*     docker_service:
+*       project_src: .
         state: '{{ c_state }}'
 ```
 
@@ -963,7 +1074,7 @@ third_app:
 class: center, middle
 
 # Q &amp; A?
-#### [github.com/pschiffe/ansible-docker](https://github.com/pschiffe/ansible-docker)
+#### <span class="fa fa-github-square"></span> [pschiffe/ansible-docker](https://github.com/pschiffe/ansible-docker)
 #### <span class="fa fa-linkedin-square"></span> [Peter Schiffer](https://www.linkedin.com/in/peterschiffer/)
 #### <span class="fa fa-twitter-square"></span> [Tomáš Tomeček](https://twitter.com/TomasTomec)
 
