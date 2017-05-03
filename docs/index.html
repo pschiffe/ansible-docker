@@ -52,7 +52,7 @@ whoami
 
 # Agenda
 
-* Ansible crash course
+* Ansible crash course (optional)
 * Containers with Ansible
 * Building images
 * But I have Docker Compose already
@@ -65,7 +65,7 @@ whoami
 
 --
 
-  * Like, very very powerful
+  * Like, very, very powerful
 
 --
 
@@ -73,33 +73,15 @@ whoami
 
 --
 
-  * But for über-scale you should get Ansible Tower
+  * But for über-scale you should get [Ansible Tower](https://www.ansible.com/tower)
 
 --
 
   * Content of this talk is for small to mid-scale
 
----
+--
 
-exclude: true
-# Prerequisites
-
-```bash
-sudo dnf install ansible docker python-docker-py
-sudo systemctl start docker
-```
-
-```bash
-sudo docker pull gogs/gogs:0.9.113
-sudo docker pull rroemhild/mailpile
-sudo docker pull mongo:3.4
-sudo docker pull rocket.chat
-sudo docker pull eeacms/haproxy
-sudo docker pull eeacms/hello
-sudo docker pull fedora:25
-sudo docker pull nginx:1.10-alpine
-sudo docker pull mariadb:10.1
-```
+     * If you are serious with containers -> [Kubernetes](https://kubernetes.io/) &amp; [OpenShift](https://www.openshift.org/)
 
 ---
 
@@ -149,8 +131,9 @@ www[01:50].example.com
 ## Dynamic Inventory
 
 ```bash
-$ source openstack.rc
-$ ansible -i openstack.py all -m ping
+$ wget https://raw.githubuserco...vel/contrib/inventory/docker.py
+$ chmod 755 docker.py
+$ ansible -i docker.py all -m ping
 ```
 
 ???
@@ -323,6 +306,8 @@ yum, apt, package, pip, template, file, service, command, shell, nmcli..
       template: src=t/httpd.j2 dest={{ apache_conf | default('/etc/httpd.conf') }}
 ```
 
+http://docs.ansible.com/ansible/playbooks_variables.html
+
 ---
 
 # Variables
@@ -343,6 +328,8 @@ yum, apt, package, pip, template, file, service, command, shell, nmcli..
       template: src=t/httpd.j2 dest={{ apache_conf | default('/etc/httpd.conf') }}
 ```
 
+http://docs.ansible.com/ansible/playbooks_variables.html
+
 ---
 
 # Variables
@@ -362,6 +349,8 @@ yum, apt, package, pip, template, file, service, command, shell, nmcli..
     - name: write the apache config file
       template: src=t/httpd.j2 dest={{ apache_conf | default('/etc/httpd.conf') }}
 ```
+
+http://docs.ansible.com/ansible/playbooks_variables.html
 
 ---
 
@@ -404,6 +393,8 @@ Filters: [docs.ansible.com/ansible/playbooks_filters.html](https://docs.ansible.
 {% endfor %}
 ```
 
+http://docs.ansible.com/ansible/playbooks_templating.html
+
 ---
 
 # Templates (httpd.j2)
@@ -422,6 +413,8 @@ Filters: [docs.ansible.com/ansible/playbooks_filters.html](https://docs.ansible.
 </VirtualHost>
 {% endfor %}
 ```
+
+http://docs.ansible.com/ansible/playbooks_templating.html
 
 ---
 
@@ -442,6 +435,8 @@ Filters: [docs.ansible.com/ansible/playbooks_filters.html](https://docs.ansible.
 *{% endfor %}
 ```
 
+http://docs.ansible.com/ansible/playbooks_templating.html
+
 ---
 
 # Templates (httpd.j2)
@@ -461,24 +456,7 @@ Filters: [docs.ansible.com/ansible/playbooks_filters.html](https://docs.ansible.
 {% endfor %}
 ```
 
----
-
-# Templates (httpd.j2)
-
-```django
-{# Set up VirtualHosts #}
-{% for vhost in apache_vhosts %}
-*<VirtualHost {{ apache_listen_ip | default('*') }}:{{ apache_listen_port }}>
-* ServerName {{ vhost.servername }}
-{% if vhost.serveralias is defined %}
-* ServerAlias {{ vhost.serveralias }}
-{% endif %}
-{% if vhost.documentroot is defined %}
-* DocumentRoot {{ vhost.documentroot }}
-{% endif %}
-</VirtualHost>
-{% endfor %}
-```
+http://docs.ansible.com/ansible/playbooks_templating.html
 
 ---
 
@@ -493,6 +471,8 @@ Filters: [docs.ansible.com/ansible/playbooks_filters.html](https://docs.ansible.
   apt: name=apache2 state=present
 * when: ansible_os_family == 'Debian'
 ```
+
+http://docs.ansible.com/ansible/playbooks_conditionals.html
 
 ---
 
@@ -514,6 +494,8 @@ Filters: [docs.ansible.com/ansible/playbooks_filters.html](https://docs.ansible.
 *   - apache2-utils
 ```
 
+http://docs.ansible.com/ansible/playbooks_loops.html
+
 ---
 
 # Roles (directory structure)
@@ -523,7 +505,7 @@ site.yml
 webservers.yml
 fooservers.yml
 roles/
-  webservers/
+  webserver/
     files/
     templates/
     tasks/
@@ -535,6 +517,8 @@ roles/
       main.yml
     meta/
 ```
+
+http://docs.ansible.com/ansible/playbooks_roles.html
 
 ---
 
@@ -545,7 +529,7 @@ roles/
 *webservers.yml
 *fooservers.yml
 roles/
-  webservers/
+  webserver/
     files/
     templates/
     tasks/
@@ -557,6 +541,8 @@ roles/
       main.yml
     meta/
 ```
+
+http://docs.ansible.com/ansible/playbooks_roles.html
 
 ---
 
@@ -567,7 +553,7 @@ site.yml
 webservers.yml
 fooservers.yml
 roles/
-* webservers/
+* webserver/
     files/
     templates/
     tasks/
@@ -579,6 +565,8 @@ roles/
       main.yml
     meta/
 ```
+
+http://docs.ansible.com/ansible/playbooks_roles.html
 
 ---
 
@@ -589,7 +577,7 @@ site.yml
 webservers.yml
 fooservers.yml
 roles/
-  webservers/
+  webserver/
     files/
     templates/
     tasks/
@@ -601,6 +589,8 @@ roles/
 *     main.yml
     meta/
 ```
+
+http://docs.ansible.com/ansible/playbooks_roles.html
 
 ---
 
@@ -613,6 +603,66 @@ roles/
     - common
     - webservers
 ```
+
+--
+
+Community roles available in [Ansible Galaxy](https://galaxy.ansible.com/).
+
+Especially check out the [geerlingguy](https://galaxy.ansible.com/geerlingguy/) author, who also wrote the [Ansible for DevOps](https://www.ansiblefordevops.com/) book.
+
+<br>
+
+http://docs.ansible.com/ansible/playbooks_roles.html
+
+---
+
+# Vault
+
+For encrypting passwords
+
+```bash
+$ ansible-vault create secret.yml
+Vault password:
+
+$ ansible-vault edit secret.yml
+Vault password:
+```
+
+--
+
+```bash
+$ cat secret.yml
+$ANSIBLE_VAULT;1.1;AES256
+6332313036326361653438653861666161396130616564373439656264663334666330303334623
+3033663036646231343364306132643736363162336335340a64313530363465373130346434663
+6564323833663762633664396334663337306462366637633537623661303238336561326565306
+3530333333313138350a35663936646265613961373061353463623161346530653766303839306
+38353136653566643831643430646638383765326236323738663665323132323362
+```
+
+---
+
+# Vault
+
+```yaml
+- name: deploy webservers
+  hosts: webservers
+  vars_files:
+    - secret.yml
+  roles:
+    - common
+    - webservers
+```
+
+--
+
+```bash
+$ ansible-playbook site.yml --ask-vault-pass
+$ ansible-playbook site.yml --vault-password-file ~/.vault_pass.txt
+$ ansible-playbook site.yml --vault-password-file ~/.vault_pass.py
+```
+
+http://docs.ansible.com/ansible/playbooks_vault.html
 
 ---
 
@@ -821,14 +871,31 @@ $ cat container.yml
 # Networking and connection: docker - Rocket.Chat
 
 ```yaml
+FROM mongo:3.4
+MAINTAINER "Peter Schiffer" <pschiffe@redhat.com>
+
+COPY 99defaultrelease /etc/apt/apt.conf.d/
+COPY stable.list testing.list /etc/apt/sources.list.d/
+
+RUN apt-get update \
+* &amp;&amp; apt-get install -y --no-install-recommends python-minimal \
+* &amp;&amp; apt-get install -t testing -y --no-install-recommends python-pymongo \
+  &amp;&amp; rm -rf /var/lib/apt/lists/*
+```
+
+---
+
+# Networking and connection: docker - Rocket.Chat
+
+```yaml
 - name: create db users in mongodb container
 * hosts: '{{ c_name }}-mongo'
 * connection: docker
   vars:
     mongo_admin: admin
-    mongo_admin_pass: password1
     rocket_user: rocket
-    rocket_password: password2
+  vars_files:
+    - passwords.yml
   tasks:
     - name: create rocket user
 *     mongodb_user:
