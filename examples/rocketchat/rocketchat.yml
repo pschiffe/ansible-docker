@@ -38,9 +38,9 @@
   vars:
     c_name: my-rocketchat
     mongo_admin: admin
-    mongo_admin_pass: password1
     rocket_user: rocket
-    rocket_password: password2
+  vars_files:
+    - passwords.yml
   tasks:
     - name: create admin user
       shell: "echo \"db.createUser({ user: '{{ mongo_admin }}', pwd: '{{ mongo_admin_pass }}', roles: [ { role: 'userAdminAnyDatabase', db: 'admin' } ] });\" | mongo admin"
@@ -64,7 +64,8 @@
     c_state: '{{ "absent" if wipe | bool else "started" }}'
     c_name: my-rocketchat
     rocket_user: rocket
-    rocket_password: password2
+  vars_files:
+    - passwords.yml
   tasks:
     - name: create rocketchat container
       docker_container:
@@ -77,7 +78,7 @@
         networks:
           - name: '{{ c_name }}'
         published_ports:
-          - '3000:3000'
+          - '3001:3000'
         env:
           MONGO_URL: 'mongodb://{{ rocket_user }}:{{ rocket_password }}@db:27017/{{ rocket_user }}'
         volumes:
