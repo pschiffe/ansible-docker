@@ -1,23 +1,26 @@
-# Managing containers with Ansible
+# Managing Containers with Ansible
 
-Slides are available at https://pschiffe.github.io/ansible-docker/#1
+Slides are available at https://pschiffe.github.io/ansible-docker/
 
 ### Prerequisites
 
 If you want to follow along, install and download following prerequisites (instructions are for Fedora, adjust to your distro):
 ```
-sudo dnf install ansible docker python-docker-py
+sudo dnf install ansible python-docker-py docker docker-compose
+sudo groupadd docker                # for the docker dynamic inventory
+sudo gpasswd -a $(whoami) docker    # to work, you need to be able to run
+sudo su $(whoami) -                 # docker without sudo, or sudo without pw
 sudo systemctl start docker
 ```
 
 ```
-sudo docker pull gogs/gogs:0.9.113
-sudo docker pull rroemhild/mailpile
-sudo docker pull mongo:3.4
-sudo docker pull rocket.chat
-sudo docker pull eeacms/haproxy
-sudo docker pull eeacms/hello
-sudo docker pull fedora:25
-sudo docker pull nginx:1.10-alpine
-sudo docker pull mariadb:10.1
+docker pull gitea/gitea:1.1
+docker pull rroemhild/mailpile
+docker pull pschiffe/mongo-ansible
+docker pull rocket.chat
+docker pull fedora:25
+docker pull nginx:1.12-alpine
+docker pull mariadb:10.1
+docker pull eeacms/haproxy:1.7-3.0
+docker pull eeacms/hello
 ```
