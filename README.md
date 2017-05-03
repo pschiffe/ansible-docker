@@ -9,7 +9,7 @@ If you want to follow along, install and download following prerequisites (instr
 sudo dnf install ansible python-docker-py docker docker-compose
 sudo groupadd docker                # for the docker dynamic inventory
 sudo gpasswd -a $(whoami) docker    # to work, you need to be able to run
-sudo su $(whoami) -                 # docker without sudo, or sudo without pw
+sudo su $(whoami) -                 # docker without sudo
 sudo systemctl start docker
 ```
 
