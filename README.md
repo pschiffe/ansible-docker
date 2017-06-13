@@ -14,7 +14,7 @@ sudo systemctl start docker
 ```
 
 ```
-docker pull gitea/gitea:1.1
+docker pull gitea/gitea:1.1.2
 docker pull rroemhild/mailpile
 docker pull pschiffe/mongo-ansible
 docker pull rocket.chat

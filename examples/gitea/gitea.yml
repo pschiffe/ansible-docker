@@ -9,7 +9,7 @@
     - name: create gitea container
       docker_container:
         name: '{{ c_name }}'
-        image: gitea/gitea:1.1
+        image: gitea/gitea:1.1.2
         pull: true
         state: '{{ c_state }}'
         restart_policy: always
