@@ -693,7 +693,7 @@ Documentation: [docs.ansible.com/ansible/list_of_cloud_modules.html#docker](http
     - name: create gitea container
       docker_container:
         name: my-gitea
-        image: gitea/gitea:1.1
+        image: gitea/gitea:1.1.2
         state: started    # absent, present, stopped
         published_ports:
           - '10022:22'
@@ -1019,16 +1019,11 @@ tasks:
 # Building Images - ghost
 
 ```yaml
-- name: get mariadb IP address
-* command: "docker inspect --format {% raw %}'{{range \
-*   .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'{% endraw %} \
-*   {{ db_container }}"
-  register: mariadb_ip_address
-  when: not wipe | bool
+- meta: refresh_inventory
 
 - name: wait for mariadb to become ready
 * wait_for:
-    host: '{{ mariadb_ip_address.stdout }}'
+*   host: '{{ hostvars[db_container]["docker_networksettings"]["Networks"][c_name]["IPAddress"] }}'
     port: 3306
     state: started
     connect_timeout: 15

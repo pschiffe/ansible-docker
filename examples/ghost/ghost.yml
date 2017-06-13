@@ -51,14 +51,11 @@
         volumes:
           - '{{ db_container }}-data:/var/lib/mysql:z'
 
-    - name: get mariadb IP address
-      command: "docker inspect --format {% raw %}'{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'{% endraw %} {{ db_container }}"
-      register: mariadb_ip_address
-      when: not wipe | bool
+    - meta: refresh_inventory
 
     - name: wait for mariadb to become ready
       wait_for:
-        host: '{{ mariadb_ip_address.stdout }}'
+        host: '{{ hostvars[db_container]["docker_networksettings"]["Networks"][c_name]["IPAddress"] }}'
         port: 3306
         state: started
         connect_timeout: 15
