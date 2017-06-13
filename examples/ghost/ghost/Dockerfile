@@ -11,7 +11,7 @@ RUN dnf -y --setopt=tsflags=nodocs install \
 
 WORKDIR /app
 
-RUN GHOST_VERSION=0.11.8 \
+RUN GHOST_VERSION=0.11.9 \
     && curl -sSL -O https://github.com/TryGhost/Ghost/releases/download/${GHOST_VERSION}/Ghost-${GHOST_VERSION}.zip \
     && unzip Ghost-${GHOST_VERSION}.zip \
     && rm -f Ghost-${GHOST_VERSION}.zip \
