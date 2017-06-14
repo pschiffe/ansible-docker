@@ -73,7 +73,7 @@ whoami
 
 --
 
-  * But for über-scale you should get [Ansible Tower](https://www.ansible.com/tower)
+  * For über-scale check out [Ansible Tower](https://www.ansible.com/tower)
 
 --
 
@@ -131,7 +131,7 @@ www[01:50].example.com
 ## Dynamic Inventory
 
 ```bash
-$ wget https://raw.githubuserco...vel/contrib/inventory/docker.py
+$ wget https://github.com/ansible/ansible/raw/devel/contrib/inventory/docker.py
 $ chmod 755 docker.py
 $ ansible -i docker.py all -m ping
 ```
@@ -718,7 +718,7 @@ $ ansible-playbook gitea/gitea.yml
     - name: create gitea container
       docker_container:
         name: my-gitea
-        image: gitea/gitea:1.1
+        image: gitea/gitea:1.1.2
 *       pull: true
 *       state: '{{ c_state }}'
 *       restart_policy: always
@@ -748,7 +748,7 @@ $ ansible-playbook gitea/gitea.yml -e c_state=absent
     - name: create gitea container
       docker_container:
 *       name: '{{ c_name }}'
-        image: gitea/gitea:1.1
+        image: gitea/gitea:1.1.2
         state: '{{ c_state }}'
         volumes:
 *         - '{{ c_name }}-data:/data:z'
@@ -871,23 +871,6 @@ $ cat container.yml
 # Networking and connection: docker - Rocket.Chat
 
 ```yaml
-FROM mongo:3.4
-MAINTAINER "Peter Schiffer" <pschiffe@redhat.com>
-
-COPY 99defaultrelease /etc/apt/apt.conf.d/
-COPY stable.list testing.list /etc/apt/sources.list.d/
-
-RUN apt-get update \
-* &amp;&amp; apt-get install -y --no-install-recommends python-minimal \
-* &amp;&amp; apt-get install -t testing -y --no-install-recommends python-pymongo \
-  &amp;&amp; rm -rf /var/lib/apt/lists/*
-```
-
----
-
-# Networking and connection: docker - Rocket.Chat
-
-```yaml
 - name: create db users in mongodb container
 * hosts: '{{ c_name }}-mongo'
 * connection: docker
@@ -908,6 +891,23 @@ RUN apt-get update \
           - db: '{{ rocket_user }}'
             role: readWrite
         state: present
+```
+
+---
+
+# Networking and connection: docker - Rocket.Chat
+
+```yaml
+FROM mongo:3.4
+MAINTAINER "Peter Schiffer" <pschiffe@redhat.com>
+
+COPY 99defaultrelease /etc/apt/apt.conf.d/
+COPY stable.list testing.list /etc/apt/sources.list.d/
+
+RUN apt-get update \
+* &amp;&amp; apt-get install -y --no-install-recommends python-minimal \
+* &amp;&amp; apt-get install -t testing -y --no-install-recommends python-pymongo \
+  &amp;&amp; rm -rf /var/lib/apt/lists/*
 ```
 
 ---
