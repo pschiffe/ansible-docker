@@ -54,8 +54,8 @@ whoami
 
 * Ansible crash course (optional)
 * Containers with Ansible
-* Building images
 * But I have Docker Compose already
+* Building images
 
 ---
 
@@ -397,69 +397,6 @@ http://docs.ansible.com/ansible/playbooks_templating.html
 
 ---
 
-# Templates (httpd.j2)
-
-```django
-*{# Set up VirtualHosts #}
-{% for vhost in apache_vhosts %}
-<VirtualHost {{ apache_listen_ip | default('*') }}:{{ apache_listen_port }}>
-  ServerName {{ vhost.servername }}
-{% if vhost.serveralias is defined %}
-  ServerAlias {{ vhost.serveralias }}
-{% endif %}
-{% if vhost.documentroot is defined %}
-  DocumentRoot {{ vhost.documentroot }}
-{% endif %}
-</VirtualHost>
-{% endfor %}
-```
-
-http://docs.ansible.com/ansible/playbooks_templating.html
-
----
-
-# Templates (httpd.j2)
-
-```django
-{# Set up VirtualHosts #}
-*{% for vhost in apache_vhosts %}
-<VirtualHost {{ apache_listen_ip | default('*') }}:{{ apache_listen_port }}>
-  ServerName {{ vhost.servername }}
-{% if vhost.serveralias is defined %}
-  ServerAlias {{ vhost.serveralias }}
-{% endif %}
-{% if vhost.documentroot is defined %}
-  DocumentRoot {{ vhost.documentroot }}
-{% endif %}
-</VirtualHost>
-*{% endfor %}
-```
-
-http://docs.ansible.com/ansible/playbooks_templating.html
-
----
-
-# Templates (httpd.j2)
-
-```django
-{# Set up VirtualHosts #}
-{% for vhost in apache_vhosts %}
-<VirtualHost {{ apache_listen_ip | default('*') }}:{{ apache_listen_port }}>
-  ServerName {{ vhost.servername }}
-*{% if vhost.serveralias is defined %}
-  ServerAlias {{ vhost.serveralias }}
-*{% endif %}
-*{% if vhost.documentroot is defined %}
-  DocumentRoot {{ vhost.documentroot }}
-*{% endif %}
-</VirtualHost>
-{% endfor %}
-```
-
-http://docs.ansible.com/ansible/playbooks_templating.html
-
----
-
 # Control structures (when)
 
 ```yaml
@@ -515,78 +452,6 @@ roles/
     vars/
     defaults/
       main.yml
-    meta/
-```
-
-http://docs.ansible.com/ansible/playbooks_roles.html
-
----
-
-# Roles (directory structure)
-
-```bash
-*site.yml
-*webservers.yml
-*fooservers.yml
-roles/
-  webserver/
-    files/
-    templates/
-    tasks/
-      main.yml
-    handlers/
-      main.yml
-    vars/
-    defaults/
-      main.yml
-    meta/
-```
-
-http://docs.ansible.com/ansible/playbooks_roles.html
-
----
-
-# Roles (directory structure)
-
-```bash
-site.yml
-webservers.yml
-fooservers.yml
-roles/
-* webserver/
-    files/
-    templates/
-    tasks/
-      main.yml
-    handlers/
-      main.yml
-    vars/
-    defaults/
-      main.yml
-    meta/
-```
-
-http://docs.ansible.com/ansible/playbooks_roles.html
-
----
-
-# Roles (directory structure)
-
-```bash
-site.yml
-webservers.yml
-fooservers.yml
-roles/
-  webserver/
-    files/
-    templates/
-    tasks/
-*     main.yml
-    handlers/
-*     main.yml
-    vars/
-    defaults/
-*     main.yml
     meta/
 ```
 
@@ -943,6 +808,57 @@ RUN apt-get update \
 
 class: center, middle
 
+# So what about Docker Compose?
+
+---
+
+# Docker Compose
+
+```yaml
+haproxy:
+  image: eeacms/haproxy:1.7-3.0
+  links:
+    - first_webapp
+    - second_webapp
+    - third_app
+  ports:
+    - "5000:5000"
+    - "1936:1936"
+  environment:
+    - SERVICE_NAMES=webapp
+
+first_webapp:
+  image: eeacms/hello
+
+second_webapp:
+  image: eeacms/hello
+
+third_app:
+  image: eeacms/hello
+```
+
+---
+
+# Ansible Playbook
+
+```yaml
+---
+- name: example ansible docker service
+  hosts: localhost
+  vars:
+    wipe: false
+    c_state: '{{ "absent" if wipe | bool else "present" }}'
+  tasks:
+    - name: create containers from docker compose
+*     docker_service:
+*       project_src: .
+        state: '{{ c_state }}'
+```
+
+---
+
+class: center, middle
+
 # Building Images
 
 ---
@@ -1078,57 +994,6 @@ tasks:
   retries: 10
   delay: 10
   when: not wipe | bool
-```
-
----
-
-class: center, middle
-
-# So what about Docker Compose?
-
----
-
-# Docker Compose
-
-```yaml
-haproxy:
-  image: eeacms/haproxy:1.7-3.0
-  links:
-    - first_webapp
-    - second_webapp
-    - third_app
-  ports:
-    - "5000:5000"
-    - "1936:1936"
-  environment:
-    - SERVICE_NAMES=webapp
-
-first_webapp:
-  image: eeacms/hello
-
-second_webapp:
-  image: eeacms/hello
-
-third_app:
-  image: eeacms/hello
-```
-
----
-
-# Ansible Playbook
-
-```yaml
----
-- name: example ansible docker service
-  hosts: localhost
-  vars:
-    wipe: false
-    c_state: '{{ "absent" if wipe | bool else "present" }}'
-  tasks:
-    - name: create containers from docker compose
-*     docker_service:
-*       project_src: .
-        state: '{{ c_state }}'
 ```
 
 ---
