@@ -1,5 +1,5 @@
 haproxy:
-  image: eeacms/haproxy:1.7-3.0
+  image: eeacms/haproxy:1.8-1.2
   links:
     - first_webapp
     - second_webapp

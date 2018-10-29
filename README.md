@@ -21,6 +21,6 @@ docker pull rocket.chat
 docker pull fedora:25
 docker pull nginx:1.12-alpine
 docker pull mariadb:10.1
-docker pull eeacms/haproxy:1.7-3.0
+docker pull eeacms/haproxy:1.8-1.2
 docker pull eeacms/hello
 ```
