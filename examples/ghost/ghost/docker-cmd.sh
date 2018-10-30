@@ -2,6 +2,6 @@
 
 set -euo pipefail
 
-envsubst < config.js.tpl > config.js
+envsubst < config.json.tpl > config.production.json
 
-exec npm start --production
+exec npm start

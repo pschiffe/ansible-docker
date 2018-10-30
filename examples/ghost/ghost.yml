@@ -36,7 +36,7 @@
     - name: run mariadb
       docker_container:
         name: '{{ db_container }}'
-        image: mariadb:10.1
+        image: mariadb:10.3
         pull: true
         state: '{{ c_state }}'
         restart_policy: always
@@ -61,7 +61,7 @@
         connect_timeout: 15
         timeout: 30
       register: mariadb_running
-      until: mariadb_running | success
+      until: mariadb_running is succeeded
       retries: 10
       delay: 5
       when: not wipe | bool
@@ -102,7 +102,7 @@
         method: GET
         status_code: 200
       register: ghost_running
-      until: ghost_running | success
+      until: ghost_running is succeeded
       retries: 10
       delay: 10
       when: not wipe | bool
