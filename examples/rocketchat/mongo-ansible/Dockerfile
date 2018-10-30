@@ -1,5 +1,5 @@
-FROM mongo:3.4
-MAINTAINER "Peter Schiffer" <pschiffe@redhat.com>
+FROM mongo:4.0
+MAINTAINER "Peter Schiffer" <peter@rfv.sk>
 
 COPY 99defaultrelease /etc/apt/apt.conf.d/
 COPY stable.list testing.list /etc/apt/sources.list.d/
